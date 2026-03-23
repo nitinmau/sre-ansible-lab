@@ -1,4 +1,4 @@
-- hosts: lab
+- hosts: all
   become: yes
   tasks:
     - name: Download OTel Collector
@@ -12,17 +12,12 @@
         dest: /usr/bin/
         remote_src: yes
 
-    - name: Create OTel config directory
-      file:
-        path: /etc/otel
-        state: directory
-
     - name: Deploy OTel config
       copy:
         src: otel/config.yaml
         dest: /etc/otel/config.yaml
 
-    - name: Create systemd unit for OTel Collector
+    - name: Create systemd service
       copy:
         dest: /etc/systemd/system/otelcol.service
         content: |
@@ -38,11 +33,8 @@
           [Install]
           WantedBy=multi-user.target
 
-    - name: Reload systemd
-      command: systemctl daemon-reload
-
-    - name: Enable and start OTel Collector
+    - name: Enable and start OTel service
       systemd:
         name: otelcol
-        state: started
         enabled: yes
+        state: started
