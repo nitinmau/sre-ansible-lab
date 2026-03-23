@@ -1,0 +1,48 @@
+- hosts: lab
+  become: yes
+  tasks:
+    - name: Download OTel Collector
+      get_url:
+        url: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.102.0/otelcol_0.102.0_linux_amd64.tar.gz
+        dest: /tmp/otelcol.tar.gz
+
+    - name: Extract OTel Collector
+      unarchive:
+        src: /tmp/otelcol.tar.gz
+        dest: /usr/bin/
+        remote_src: yes
+
+    - name: Create OTel config directory
+      file:
+        path: /etc/otel
+        state: directory
+
+    - name: Deploy OTel config
+      copy:
+        src: otel/config.yaml
+        dest: /etc/otel/config.yaml
+
+    - name: Create systemd unit for OTel Collector
+      copy:
+        dest: /etc/systemd/system/otelcol.service
+        content: |
+          [Unit]
+          Description=OpenTelemetry Collector
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/bin/otelcol --config /etc/otel/config.yaml
+          Restart=always
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd
+      command: systemctl daemon-reload
+
+    - name: Enable and start OTel Collector
+      systemd:
+        name: otelcol
+        state: started
+        enabled: yes
