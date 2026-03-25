@@ -1,30 +1,28 @@
 pipeline {
     agent any
-
     stages {
-
         stage('Checkout') {
             steps {
-                checkout scm
+                git 'git@github.com:<username>/<repo>.git'
             }
         }
 
-        stage('Install Jenkins (Optional)') {
+        stage('Run Jenkins Playbook') {
             steps {
-                sh '''
-                ansible-playbook -i hosts install-jenkins.yml
-                '''
+                sh 'ansible-playbook install-jenkins.yml -i hosts'
             }
         }
 
-        stage('Install OTel') {
+        stage('Trigger AWX OTEL Job') {
             steps {
-                sh '''
-                ansible-playbook -i hosts otel/otel-install.yml
-                '''
+                withCredentials([string(credentialsId: 'awx-token', variable: 'AWX_TOKEN')]) {
+                    sh '''
+                    curl -X POST -H "Authorization: Bearer $AWX_TOKEN" \
+                    https://<AWX_URL>/api/v2/job_templates/<JOB_ID>/launch/
+                    '''
+                }
             }
         }
     }
-}
-
+}       
 
