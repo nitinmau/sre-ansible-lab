@@ -1,7 +1,9 @@
 - hosts: all
   become: yes
-  tasks:
-    - name: Ensure Python and system dependencies are present
+  gather_facts: no   # optional quick fix to skip fact gathering
+
+  pre_tasks:
+    - name: Ensure Python dependencies are present
       apt:
         name:
           - curl
@@ -11,6 +13,7 @@
         state: present
         update_cache: yes
 
+  tasks:
     - name: Download OTel Collector
       get_url:
         url: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.102.0/otelcol_0.102.0_linux_amd64.tar.gz
@@ -51,3 +54,4 @@
         name: otelcol
         enabled: yes
         state: started
+
