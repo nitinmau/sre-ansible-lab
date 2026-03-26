@@ -1,23 +1,16 @@
 ---
 - hosts: all
   become: yes
-  gather_facts: no  # Stops the initial crash
+  gather_facts: no
   vars:
     ansible_python_interpreter: /usr/bin/python3
 
-  pre_tasks:
-    - name: Bootstrap Python for Ansible (The Fix)
-      raw: apt-get update && apt-get install -y python3-apt
-      changed_when: false
-
   tasks:
-    - name: Ensure system tools are present
-      apt:
-        name:
-          - curl
-          - tar
-        state: present
-        update_cache: yes
+    - name: Bootstrap Python and Install Tools (Shell Method)
+      shell: |
+        apt-get update
+        apt-get install -y python3-apt curl tar
+      changed_when: false
 
     - name: Create OTel config directory
       file:
