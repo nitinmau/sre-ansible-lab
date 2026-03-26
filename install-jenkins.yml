@@ -1,8 +1,18 @@
 ---
 - name: install jenkins
-  hosts: all  # Changed from 'lab' to 'all'
+  hosts: all
   become: yes
+  gather_facts: no  # <--- CRITICAL: Stops the 'Gathering Facts' crash
   vars:
     ansible_python_interpreter: /usr/bin/python3
+
+  pre_tasks:
+    - name: Bootstrap Python for Ansible (Fixes ModuleNotFoundError)
+      raw: apt-get update && apt-get install -y python3-apt
+      changed_when: false
+
+    - name: Gather facts after bootstrap
+      setup:  # Now that python3-apt is installed, we can safely gather facts
+
   roles:
     - ansible-role-jenkins

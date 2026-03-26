@@ -1,12 +1,16 @@
 ---
 - hosts: all
   become: yes
-  gather_facts: no
+  gather_facts: no  # Stops the initial crash
   vars:
-    # Ensures Ansible uses the system Python 3 on Ubuntu
     ansible_python_interpreter: /usr/bin/python3
 
   pre_tasks:
+    - name: Bootstrap Python for Ansible (The Fix)
+      raw: apt-get update && apt-get install -y python3-apt
+      changed_when: false
+
+  tasks:
     - name: Ensure system tools are present
       apt:
         name:
@@ -15,7 +19,6 @@
         state: present
         update_cache: yes
 
-  tasks:
     - name: Create OTel config directory
       file:
         path: /etc/otel
@@ -37,7 +40,7 @@
       copy:
         src: config.yaml
         dest: /etc/otel/config.yaml
-      notify: Restart OTel  # Triggers the handler if the file changes
+      notify: Restart OTel
 
     - name: Create systemd service
       copy:
