@@ -1,6 +1,8 @@
+---
 - name: install jenkins
-  hosts: lab
+  hosts: all  # Changed from 'lab' to 'all'
   become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   roles:
     - ansible-role-jenkins
-

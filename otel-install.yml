@@ -1,8 +1,10 @@
+---
 - hosts: all
   become: yes
   gather_facts: no
   vars:
-    ansible_python_interpreter: /home/nitin/ansible-venv/bin/python3
+    # Ensures Ansible uses the system Python 3 on Ubuntu
+    ansible_python_interpreter: /usr/bin/python3
 
   pre_tasks:
     - name: Ensure system tools are present
@@ -14,6 +16,12 @@
         update_cache: yes
 
   tasks:
+    - name: Create OTel config directory
+      file:
+        path: /etc/otel
+        state: directory
+        mode: '0755'
+
     - name: Download OTel Collector
       get_url:
         url: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.102.0/otelcol_0.102.0_linux_amd64.tar.gz
@@ -27,8 +35,9 @@
 
     - name: Deploy OTel config
       copy:
-        src: otel/config.yaml
+        src: config.yaml
         dest: /etc/otel/config.yaml
+      notify: Restart OTel  # Triggers the handler if the file changes
 
     - name: Create systemd service
       copy:
@@ -45,13 +54,17 @@
 
           [Install]
           WantedBy=multi-user.target
+      notify: Restart OTel
 
-    - name: Reload systemd
-      command: systemctl daemon-reload
-
-    - name: Enable and start OTel service
+    - name: Ensure OTel service is enabled and started
       systemd:
         name: otelcol
         enabled: yes
         state: started
 
+  handlers:
+    - name: Restart OTel
+      systemd:
+        name: otelcol
+        state: restarted
+        daemon_reload: yes

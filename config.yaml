@@ -1,0 +1,37 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  # Added: This collects CPU, Memory, Disk, and Network stats from the VM
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      memory:
+      network:
+      disk:
+      filesystem:
+
+processors:
+  # Added: Best practice to batch data before sending to reduce network overhead
+  batch:
+    send_batch_size: 1000
+    timeout: 10s
+
+exporters:
+  logging:
+    verbosity: normal
+
+service:
+  pipelines:
+    # Existing traces pipeline
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+    # Added: New metrics pipeline so you can see your VM's health
+    metrics:
+      receivers: [hostmetrics]
+      processors: [batch]
+      exporters: [logging]
