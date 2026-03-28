@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWX_URL = "http://192.168.0.104"
-        OTEL_JOB_ID = "9" // Ensure this is the ID of your OTEL Template in AWX
+        OTEL_JOB_ID = "9" 
     }
     stages {
         stage('Checkout') {
@@ -12,13 +12,18 @@ pipeline {
         }
         stage('Self-Repair & Deploy Jenkins') {
             steps {
-                // Runs the RAW playbook you just showed me to fix the Python/Jenkins environment
                 sh 'export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook install-jenkins.yml -i hosts'
             }
         }
+        // --- NEW STAGE ADDED HERE ---
+        stage('Deploy Grafana') {
+            steps {
+                sh 'ansible-playbook install-grafana.yml'
+            }
+        }
+        // ----------------------------
         stage('Trigger AWX OTel') {
             steps {
-                // Uses the 'awx-token' you already configured in Jenkins
                 withCredentials([string(credentialsId: 'awx-token', variable: 'AWX_TOKEN')]) {
                     sh """
                     curl -k -X POST \
