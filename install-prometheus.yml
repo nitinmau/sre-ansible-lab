@@ -1,5 +1,5 @@
 ---
-- hosts: all  # <--- FIXED: Changed from localhost to all
+- hosts: all
   become: yes
   tasks:
     - name: Create Prometheus User
@@ -12,6 +12,8 @@
       get_url:
         url: https://github.com/prometheus/prometheus/releases/download/v2.51.0/prometheus-2.51.0.linux-amd64.tar.gz
         dest: /tmp/prometheus.tar.gz
+        timeout: 60  # Added to prevent TimeoutError
+        force: no    # Skip download if file already exists in /tmp
 
     - name: Extract Prometheus
       unarchive:
@@ -45,9 +47,7 @@
           scrape_configs:
             - job_name: 'otel-collector'
               static_configs:
-                - targets: ['localhost:8889'] 
-                # Note: Since Prometheus and OTel are on the same VM, 
-                # 'localhost' is safer here.
+                - targets: ['localhost:8889']
 
     - name: Create systemd service
       copy:
