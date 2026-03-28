@@ -1,0 +1,66 @@
+---
+- hosts: localhost
+  become: yes
+  tasks:
+    - name: Create Prometheus User
+      user:
+        name: prometheus
+        shell: /bin/false
+        create_home: no
+
+    - name: Download Prometheus
+      get_url:
+        url: https://github.com/prometheus/prometheus/releases/download/v2.51.0/prometheus-2.51.0.linux-amd64.tar.gz
+        dest: /tmp/prometheus.tar.gz
+
+    - name: Extract Prometheus
+      unarchive:
+        src: /tmp/prometheus.tar.gz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Move Prometheus Binaries
+      copy:
+        src: "/tmp/prometheus-2.51.0.linux-amd64/{{ item }}"
+        dest: /usr/local/bin/
+        mode: '0755'
+        remote_src: yes
+      loop: [ 'prometheus', 'promtool' ]
+
+    - name: Create Config Directory
+      file:
+        path: /etc/prometheus
+        state: directory
+
+    - name: Deploy Prometheus Config
+      copy:
+        dest: /etc/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 10s
+          scrape_configs:
+            - job_name: 'otel-collector'
+              static_configs:
+                - targets: ['192.168.0.104:8889']
+        
+    - name: Create systemd service
+      copy:
+        dest: /etc/systemd/system/prometheus.service
+        content: |
+          [Unit]
+          Description=Prometheus
+          Wants=network-online.target
+          After=network-online.target
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/prometheus --config.file /etc/prometheus/prometheus.yml
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start Prometheus
+      systemd:
+        name: prometheus
+        state: restarted
+        enabled: yes

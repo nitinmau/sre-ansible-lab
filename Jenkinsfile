@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWX_URL = "http://192.168.0.104"
-        OTEL_JOB_ID = "9" 
+        OTEL_JOB_ID = "9"
     }
     stages {
         stage('Checkout') {
@@ -15,13 +15,18 @@ pipeline {
                 sh 'export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook install-jenkins.yml -i hosts'
             }
         }
-        // --- NEW STAGE ADDED HERE ---
         stage('Deploy Grafana') {
             steps {
                 sh 'ansible-playbook install-grafana.yml'
             }
         }
-        // ----------------------------
+        // --- ADDED PROMETHEUS STAGE ---
+        stage('Deploy Prometheus') {
+            steps {
+                sh 'ansible-playbook install-prometheus.yml'
+            }
+        }
+        // ------------------------------
         stage('Trigger AWX OTel') {
             steps {
                 withCredentials([string(credentialsId: 'awx-token', variable: 'AWX_TOKEN')]) {
