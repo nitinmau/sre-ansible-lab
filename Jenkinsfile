@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWX_URL = "http://192.168.0.104"
-        OTEL_JOB_ID = "16" // Ensure this is the ID of your OTEL Template in AWX
+        OTEL_JOB_ID = "9" // Ensure this is the ID of your OTEL Template in AWX
     }
     stages {
         stage('Checkout') {
