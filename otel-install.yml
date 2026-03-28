@@ -1,27 +1,19 @@
 ---
 - hosts: all
   become: yes
-  gather_facts: no
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
+  gather_facts: no  # Stops Ansible from looking for Python at the start
 
   tasks:
-    - name: Bootstrap Python and Install Tools (RAW Method)
-      raw: apt-get update && apt-get install -y python3-apt curl tar
-      changed_when: false
+    - name: Create OTel config directory
+      raw: mkdir -p /etc/otel && chmod 755 /etc/otel
 
-    - name: Create OTel config directory (Shell Bypass)
-      shell: mkdir -p /etc/otel && chmod 755 /etc/otel
-
-    - name: Download and Extract OTel (Shell Bypass)
-      shell: |
+    - name: Download and Extract OTel
+      raw: |
         curl -L https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.102.0/otelcol_0.102.0_linux_amd64.tar.gz -o /tmp/otelcol.tar.gz
         tar -xzf /tmp/otelcol.tar.gz -C /usr/bin/
-      args:
-        creates: /usr/bin/otelcol
 
-    - name: Deploy OTel config (Shell Bypass)
-      shell: |
+    - name: Deploy OTel config
+      raw: |
         cat <<EOF > /etc/otel/config.yaml
         receivers:
           hostmetrics:
@@ -42,8 +34,8 @@
               exporters: [debug]
         EOF
 
-    - name: Create systemd service (Shell Bypass)
-      shell: |
+    - name: Create systemd service
+      raw: |
         cat <<EOF > /etc/systemd/system/otelcol.service
         [Unit]
         Description=OpenTelemetry Collector
@@ -57,4 +49,4 @@
         EOF
 
     - name: Start OTel Service
-      shell: systemctl daemon-reload && systemctl enable otelcol && systemctl restart otelcol
+      raw: systemctl daemon-reload && systemctl enable otelcol && systemctl restart otelcol
