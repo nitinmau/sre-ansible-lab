@@ -13,7 +13,7 @@ pipeline {
         stage('Self-Repair & Deploy Jenkins') {
             steps {
                 // Runs the RAW playbook you just showed me to fix the Python/Jenkins environment
-                sh 'ansible-playbook install-jenkins.yml -i hosts'
+                sh 'export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook install-jenkins.yml -i hosts'
             }
         }
         stage('Trigger AWX OTel') {
