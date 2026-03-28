@@ -1,33 +1,30 @@
 pipeline {
     agent any
     environment {
-        // Update these to match your actual AWX setup
-        AWX_URL = "http://192.168.0.104" // Use your AWX IP
-        JOB_ID  = "16"                  // Get this from the AWX Template URL
+        AWX_URL = "http://192.168.0.104"
+        OTEL_JOB_ID = "16" // Ensure this is the ID of your OTEL Template in AWX
     }
     stages {
         stage('Checkout') {
             steps {
-                // Use your actual GitHub repo URL
                 git branch: 'main', url: 'https://github.com/nitinmau/ansible-jenkins-lab.git'
             }
         }
-
-        stage('Run Jenkins Playbook') {
+        stage('Self-Repair & Deploy Jenkins') {
             steps {
-                // The -e flag ensures Ansible uses Python3 on the target VM
-                sh 'ansible-playbook install-jenkins.yml -i hosts -e "ansible_python_interpreter=/usr/bin/python3"'
+                // Runs the RAW playbook you just showed me to fix the Python/Jenkins environment
+                sh 'ansible-playbook install-jenkins.yml -i hosts'
             }
         }
-
-        stage('Trigger AWX OTEL Job') {
+        stage('Trigger AWX OTel') {
             steps {
+                // Uses the 'awx-token' you already configured in Jenkins
                 withCredentials([string(credentialsId: 'awx-token', variable: 'AWX_TOKEN')]) {
                     sh """
                     curl -k -X POST \
-                    -H "Authorization: Bearer $AWX_TOKEN" \
+                    -H "Authorization: Bearer ${AWX_TOKEN}" \
                     -H "Content-Type: application/json" \
-                    ${AWX_URL}/api/v2/job_templates/${JOB_ID}/launch/
+                    ${AWX_URL}/api/v2/job_templates/${OTEL_JOB_ID}/launch/
                     """
                 }
             }

@@ -2,17 +2,24 @@
 - name: install jenkins
   hosts: all
   become: yes
-  gather_facts: no  # <--- CRITICAL: Stops the 'Gathering Facts' crash
+  gather_facts: no  # Keep this NO
   vars:
     ansible_python_interpreter: /usr/bin/python3
 
-  pre_tasks:
-    - name: Bootstrap Python for Ansible (Fixes ModuleNotFoundError)
-      raw: apt-get update && apt-get install -y python3-apt
+  tasks:
+    - name: 1. Bootstrap Python and Dependencies (RAW)
+      raw: apt-get update && apt-get install -y python3-minimal python3-apt curl gnupg fontconfig openjdk-17-jre
       changed_when: false
 
-    - name: Gather facts after bootstrap
-      setup:  # Now that python3-apt is installed, we can safely gather facts
+    - name: 2. Add Jenkins Key and Repo (RAW)
+      raw: |
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list > /dev/null
 
-  roles:
-    - ansible-role-jenkins
+    - name: 3. Install and Start Jenkins (RAW)
+      raw: |
+        apt-get update && \
+        apt-get install -y jenkins && \
+        systemctl daemon-reload && \
+        systemctl enable jenkins && \
+        systemctl restart jenkins
