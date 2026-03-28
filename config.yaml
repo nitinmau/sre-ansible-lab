@@ -11,13 +11,16 @@ processors:
   batch:
 
 exporters:
-  # This prints the metrics to the system logs so we can verify it's working
   debug:
     verbosity: normal
+  # --- ADDED THIS ---
+  prometheus:
+    endpoint: "0.0.0.0:8889"
 
 service:
   pipelines:
     metrics:
       receivers: [hostmetrics]
       processors: [batch]
-      exporters: [debug]
+      # --- UPDATED THIS ---
+      exporters: [debug, prometheus]

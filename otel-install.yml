@@ -1,7 +1,7 @@
 ---
 - hosts: all
   become: yes
-  gather_facts: no  # Stops Ansible from looking for Python at the start
+  gather_facts: no
 
   tasks:
     - name: Create OTel config directory
@@ -21,17 +21,25 @@
             scrapers:
               cpu:
               memory:
+              disk:
+              network:
         processors:
           batch:
         exporters:
           debug:
             verbosity: normal
+          # --- ADDED THIS SECTION ---
+          prometheus:
+            endpoint: "0.0.0.0:8889"
+          # -------------------------
         service:
           pipelines:
             metrics:
               receivers: [hostmetrics]
               processors: [batch]
-              exporters: [debug]
+              # --- UPDATED THIS LINE ---
+              exporters: [debug, prometheus]
+              # -------------------------
         EOF
 
     - name: Create systemd service
