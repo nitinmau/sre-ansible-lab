@@ -1,3 +1,2 @@
 [lab]
-localhost ansible_connection=local
-
+192.168.0.104 ansible_user=nitin
