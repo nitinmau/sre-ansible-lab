@@ -1,20 +1,23 @@
 ---
-- hosts: localhost
+- hosts: all  # <--- CHANGE THIS from localhost to all
   become: yes
   tasks:
     - name: Install dependencies
       apt:
         name: [ 'apt-transport-https', 'software-properties-common', 'wget' ]
         state: present
+        update_cache: yes
 
     - name: Add Grafana GPG key
       shell: |
         mkdir -p /etc/apt/keyrings/
-        wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
+        wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor --yes -o /etc/apt/keyrings/grafana.gpg
+      changed_when: false
 
     - name: Add Grafana Repository
       shell: |
-        echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+        echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | tee /etc/apt/sources.list.d/grafana.list
+      changed_when: false
 
     - name: Install Grafana
       apt:

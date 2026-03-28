@@ -4,15 +4,17 @@
   gather_facts: no
 
   tasks:
-    - name: Create OTel config directory
+    - name: 1. Create OTel config directory
       raw: mkdir -p /etc/otel && chmod 755 /etc/otel
 
-    - name: Download and Extract OTel
+    - name: 2. Download and Extract OTel Binary
       raw: |
         curl -L https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.102.0/otelcol_0.102.0_linux_amd64.tar.gz -o /tmp/otelcol.tar.gz
         tar -xzf /tmp/otelcol.tar.gz -C /usr/bin/
+        # Ensuring the binary is executable
+        chmod +x /usr/bin/otelcol
 
-    - name: Deploy OTel config
+    - name: 3. Deploy OTel config (with Prometheus Exporter)
       raw: |
         cat <<EOF > /etc/otel/config.yaml
         receivers:
@@ -28,21 +30,18 @@
         exporters:
           debug:
             verbosity: normal
-          # --- ADDED THIS SECTION ---
           prometheus:
             endpoint: "0.0.0.0:8889"
-          # -------------------------
         service:
           pipelines:
             metrics:
               receivers: [hostmetrics]
               processors: [batch]
-              # --- UPDATED THIS LINE ---
               exporters: [debug, prometheus]
-              # -------------------------
         EOF
+        chmod 644 /etc/otel/config.yaml
 
-    - name: Create systemd service
+    - name: 4. Create systemd service
       raw: |
         cat <<EOF > /etc/systemd/system/otelcol.service
         [Unit]
@@ -56,5 +55,8 @@
         WantedBy=multi-user.target
         EOF
 
-    - name: Start OTel Service
-      raw: systemctl daemon-reload && systemctl enable otelcol && systemctl restart otelcol
+    - name: 5. Start and Enable OTel Service
+      raw: |
+        systemctl daemon-reload
+        systemctl enable otelcol
+        systemctl restart otelcol

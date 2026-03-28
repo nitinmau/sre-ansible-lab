@@ -1,2 +1,2 @@
-[lab]
-192.168.0.104 ansible_user=nitin
+[all]
+192.168.0.104 ansible_user=nitin ansible_ssh_common_args='-o StrictHostKeyChecking=no'

@@ -1,42 +1,37 @@
 pipeline {
     agent any
-    
+
     environment {
-        // Ensure this matches your VM IP
         AWX_URL = "http://192.168.0.104"
-        // Ensure these IDs match your AWX Project and Template
         OTEL_JOB_ID = "9"
-        AWX_PROJECT_ID = "7" 
+        AWX_PROJECT_ID = "7"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // FIXED: Pointing to the repo that contains all your playbooks
                 git branch: 'main', url: 'https://github.com/nitinmau/sre-ansible-lab.git'
             }
         }
 
-        stage('Self-Repair & Deploy Jenkins') {
-            steps {
-                sh 'export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook install-jenkins.yml -i hosts'
-            }
-        }
+        // --- SKIPPED JENKINS INSTALL TO AVOID REDUNDANCY ---
 
         stage('Deploy Grafana') {
             steps {
-                sh 'ansible-playbook install-grafana.yml'
+                // ADDED: export ANSIBLE_HOST_KEY_CHECKING for every stage to be safe
+                sh 'export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook install-grafana.yml -i hosts'
             }
         }
 
         stage('Deploy Prometheus') {
             steps {
-                sh 'ansible-playbook install-prometheus.yml'
+                sh 'export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook install-prometheus.yml -i hosts'
             }
         }
 
         stage('Sync AWX Project') {
             steps {
+                // SRE Tip: Using credentialsId ensures your token isn't leaked in logs
                 withCredentials([string(credentialsId: 'awx-token', variable: 'AWX_TOKEN')]) {
                     sh """
                     curl -k -X POST \
@@ -63,7 +58,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             echo "Pipeline execution finished."

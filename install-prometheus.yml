@@ -1,5 +1,5 @@
 ---
-- hosts: localhost
+- hosts: all  # <--- FIXED: Changed from localhost to all
   become: yes
   tasks:
     - name: Create Prometheus User
@@ -31,18 +31,24 @@
       file:
         path: /etc/prometheus
         state: directory
+        owner: prometheus
+        group: prometheus
 
     - name: Deploy Prometheus Config
       copy:
         dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
         content: |
           global:
             scrape_interval: 10s
           scrape_configs:
             - job_name: 'otel-collector'
               static_configs:
-                - targets: ['192.168.0.104:8889']
-        
+                - targets: ['localhost:8889'] 
+                # Note: Since Prometheus and OTel are on the same VM, 
+                # 'localhost' is safer here.
+
     - name: Create systemd service
       copy:
         dest: /etc/systemd/system/prometheus.service
@@ -55,12 +61,21 @@
           User=prometheus
           Group=prometheus
           Type=simple
-          ExecStart=/usr/local/bin/prometheus --config.file /etc/prometheus/prometheus.yml
+          ExecStart=/usr/local/bin/prometheus --config.file /etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus/
+          Restart=always
           [Install]
           WantedBy=multi-user.target
+
+    - name: Create Data Directory
+      file:
+        path: /var/lib/prometheus
+        state: directory
+        owner: prometheus
+        group: prometheus
 
     - name: Start Prometheus
       systemd:
         name: prometheus
         state: restarted
         enabled: yes
+        daemon_reload: yes
