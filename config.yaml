@@ -2,10 +2,19 @@ receivers:
   hostmetrics:
     collection_interval: 10s
     scrapers:
-      cpu:
-      memory:
-      disk:
-      network:
+      cpu: {}
+      memory: {}
+      disk: {}
+      network: {}
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  filelog:
+    include: [ /var/log/syslog ]
+    start_at: end
 
 processors:
   batch:
@@ -13,14 +22,26 @@ processors:
 exporters:
   debug:
     verbosity: normal
-  # --- ADDED THIS ---
   prometheus:
     endpoint: "0.0.0.0:8889"
+  otlp/jaeger:
+    endpoint: "localhost:14250"
+    tls:
+      insecure: true
+  loki:
+    endpoint: "http://localhost:3100/loki/api/v1/push"
 
 service:
   pipelines:
     metrics:
-      receivers: [hostmetrics]
+      receivers: [hostmetrics, otlp]
       processors: [batch]
-      # --- UPDATED THIS ---
       exporters: [debug, prometheus]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]
+    logs:
+      receivers: [otlp, filelog]
+      processors: [batch]
+      exporters: [loki]
